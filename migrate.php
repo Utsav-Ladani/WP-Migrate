@@ -51,6 +51,11 @@ function migrate( $args, $assoc_args ) {
 	$post_per_page = 2;
 	$migrate_in_this_run = 0;
 	$previously_migrated_post = get_option( 'previously_migrated_post', 0 );
+	$updated_post = 0;
+
+	if ( isset( $assoc_args['update'] ) && $assoc_args['update'] == 'true' ) {
+		$previously_migrated_post = 0;
+	}
 
 	while( true ) {
 		$sql = "SELECT * FROM {$wpdb->prefix}posts ORDER BY 'post_id' DESC LIMIT " . $previously_migrated_post . ", {$post_per_page}";
@@ -74,6 +79,7 @@ function migrate( $args, $assoc_args ) {
 					$wpdb->query( $sql );
 
 					migrate_post( $post );
+					$updated_post++;
 					WP_CLI::line( "Updated post with ID: {$post->ID}" );
 				}
 			} else if ( $post->post_type == 'revision' ) {
@@ -92,6 +98,7 @@ function migrate( $args, $assoc_args ) {
 		$migrate_in_this_run += count( $posts );
 		update_option( 'previously_migrated_post', $previously_migrated_post );
 	}
+	WP_CLI::success( "Updated {$updated_post} posts" );
 	WP_CLI::success( "Migrated {$migrate_in_this_run} posts" );
 }
 
