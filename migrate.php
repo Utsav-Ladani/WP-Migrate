@@ -42,17 +42,18 @@ function migrate( $args, $assoc_args ) {
 	) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 		$wpdb->query( $sql );
 
-		WP_CLI::success( "Cleaned migrate table" );
+		update_option( 'previously_migrated_post', 0 );
+
+		WP_CLI::success( "Cleaned previous data" );
 	}
 
-
-	$sql = "SELECT COUNT(*) FROM `{$wpdb->prefix}posts`";
-	$total_post = $wpdb->get_var( $sql );
 	$current_page = 0;
 	$post_per_page = 2;
+	$migrate_in_this_run = 0;
+	$previously_migrated_post = get_option( 'previously_migrated_post', 0 );
 
 	while( true ) {
-		$sql = "SELECT * FROM {$wpdb->prefix}posts ORDER BY 'post_id' DESC LIMIT " . $current_page * $post_per_page . ", {$post_per_page}";
+		$sql = "SELECT * FROM {$wpdb->prefix}posts ORDER BY 'post_id' DESC LIMIT " . $previously_migrated_post . ", {$post_per_page}";
 		$posts = $wpdb->get_results( $sql );
 
 		if( empty( $posts ) ) {
@@ -87,8 +88,11 @@ function migrate( $args, $assoc_args ) {
 		WP_CLI::line( "--------------------------------------" );
 
 		$current_page++;
+		$previously_migrated_post += count( $posts );
+		$migrate_in_this_run += count( $posts );
+		update_option( 'previously_migrated_post', $previously_migrated_post );
 	}
-	WP_CLI::success( "Migrated {$total_post} posts" );
+	WP_CLI::success( "Migrated {$migrate_in_this_run} posts" );
 }
 
 function migrate_post( $post ) {
